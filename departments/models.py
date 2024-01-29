@@ -1,5 +1,7 @@
 from django.db import models
 
+# [ Courses ] Semester : Start_from(dateField), ends_at(dateField), name(Charfield20)
+
 
 class Instructor(models.Model):
     class Meta:

@@ -1,0 +1,68 @@
+Technical specification for data scrapers. 
+We have Tables : 
+ - [ Courses ] Semester : Start_from(dateField), ends_at(dateField), name(Charfield20)
+ - [ Courses ] Course : name(Charfield50), description(TextField), department(ForeignKey), instructors(ManyToManyField), credits(IntegerField)
+ - [ Courses ] Section : course(ForeignKey), section_number(IntegerField)
+ - [ Courses ] CourseGetting : course(ForeignKey), section(ForeignKey), semester(ForeignKey), instructor(ForeignKey), grade_distribution(JSONField), grade(Charfield2), capacity(IntegerField)
+
+ - [ Departments ] Instructor : first_name(Charfield50), last_name(Charfield50), middle_name(Charfield50)
+ - [ Departments ] Department : name(Charfield50)
+ - [ Departments ] Major : name(Charfield50), department(ForeignKey(Department))
+ 
+
+
+## From Drade Distribution pdf's we can get: 
+Semester.name : from name of the file 
+Department.name : from name of the file
+
+Course.name && Section.course : from Column1 of the row
+Section.section_number : from Column 2 of the row
+Coursegetting. grade_distribution from Columns 6-13 of the row
+
+## 
+
+## We have still uncovered data which are currently filled with Dummy objects, they are:
+1) Semester.Start_from and Semester.ends_at - they need to be defined right before/at the time when we parse the filename
+    Solution : To have a semester_configs.py file with all basic settings, data written there, so we just import different settings each semester
+2) Course.description, Course.department, Course.Instructors, Course.credits
+    Solution : Parse through source
+3) CourseGetting.semester, CourseGetting.instructor(ForeignKey), CourseGetting.grade(Charfield2), CourseGetting.capacity(IntegerField)
+    Solution :  
+                CourseGetting.semester from semester_configs.py
+                CourseGetting.instructor(ForeignKey) : 
+4) Instructor.first_name, Instructor.last_name
+    Solution :
+6) Major.name, Major.department
+    Solution :
+
+
+Sources available for Parse: 
+Online : Public Course Offerings |  https://registrar.nu.edu.kz/course-catalog
+    Course.description, Course.department, Course.Instructors, Course.credits
+    Section.section_number
+    CourseGetting.semester, CourseGetting.instructor(ForeignKey), CourseGetting.capacity(IntegerField)
+    Instructor.first_name, Instructor.last_name
+    Major.name, Major.department
+
+    Moreover we can there : Pre-Reqs, Co-Reqs, Anti-Reqs, Levels, section_type, section_schedule, section_room
+    Priority of registrations
+
+PDF : Course schedule bu  schools   
+    School name and Level from File_name
+    Course.Abbreviation, 
+    section_number
+    Course Title
+    Semester (Start && End)
+    Credits (US) and (ECTS)
+    Schedule (Days) and (Time)
+    Enrolled students Count
+    Course Student capacity
+    Faculty (Instructor)
+    Room with room capacity
+
+    
+
+Alter table suggestions:
+    Add Section.Instructor field
+    Add Section.Type : That will hold values "Lecture", "Seminar", "Lab"
+    Add Departments.School : SEDS, SSH are schools | Departments are : Math, CompSci
