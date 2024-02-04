@@ -12,7 +12,6 @@ class DepartmentAdmin(admin.ModelAdmin):
 class MajorAdmin(admin.ModelAdmin):
     list_display = ('name', 'department')
 
-
 admin.site.register(Instructor, InstructorAdmin)
 admin.site.register(Department, DepartmentAdmin)
 admin.site.register(Major, MajorAdmin)

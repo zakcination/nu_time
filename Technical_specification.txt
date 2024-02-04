@@ -22,18 +22,19 @@ Coursegetting. grade_distribution from Columns 6-13 of the row
 ## 
 
 ## We have still uncovered data which are currently filled with Dummy objects, they are:
-1) Semester.Start_from and Semester.ends_at - they need to be defined right before/at the time when we parse the filename
-    Solution : To have a semester_configs.py file with all basic settings, data written there, so we just import different settings each semester
-2) Course.description, Course.department, Course.Instructors, Course.credits
+* 1) Semester.Start_from and Semester.ends_at - they need to be defined right before/at the time when we parse the filename
+-    Solution : To have a semester_configs.py file with all basic settings, data written there, so we just import different settings each semester
+*2) Course.description, Course.department, Course.Instructors, Course.credits
     Solution : Parse through source
 3) CourseGetting.semester, CourseGetting.instructor(ForeignKey), CourseGetting.grade(Charfield2), CourseGetting.capacity(IntegerField)
     Solution :  
                 CourseGetting.semester from semester_configs.py
                 CourseGetting.instructor(ForeignKey) : 
-4) Instructor.first_name, Instructor.last_name
+*4) Instructor.first_name, Instructor.last_name
     Solution :
 6) Major.name, Major.department
     Solution :
+*7) Schools - Courses mapping
 
 
 Sources available for Parse: 
@@ -47,22 +48,24 @@ Online : Public Course Offerings |  https://registrar.nu.edu.kz/course-catalog
     Moreover we can there : Pre-Reqs, Co-Reqs, Anti-Reqs, Levels, section_type, section_schedule, section_room
     Priority of registrations
 
-PDF : Course schedule bu  schools   
-    School name and Level from File_name
-    Course.Abbreviation, 
-    section_number
-    Course Title
-    Semester (Start && End)
-    Credits (US) and (ECTS)
-    Schedule (Days) and (Time)
-    Enrolled students Count
-    Course Student capacity
-    Faculty (Instructor)
-    Room with room capacity
+PDF : Course schedule by  schools   
+*    School name and Level from File_name
+*    Course.Abbreviation, 
+*    section_number
+*    Course Title
+*    Semester (Start && End)
+*    Credits (US) and (ECTS)
+*    Schedule (Days) and (Time)
+*    Enrolled students Count
+*    Course Student capacity
+*    Faculty (Instructor)
+*    Room with room capacity
 
     
 
 Alter table suggestions:
     Add Section.Instructor field
-    Add Section.Type : That will hold values "Lecture", "Seminar", "Lab"
-    Add Departments.School : SEDS, SSH are schools | Departments are : Math, CompSci
+*    Add Section.Type : That will hold values "Lecture", "Seminar", "Lab"
+* deps == School, majors == Departments    Add Departments.School : SEDS, SSH are schools | Departments are : Math, CompSci
+
+    Add level variable for Course : UG or G PhD

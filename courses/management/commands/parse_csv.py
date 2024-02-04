@@ -1,5 +1,5 @@
 from django.core.management.base import BaseCommand
-from courses.commands import parse_csv
+from parser.command import parse_csv
 
 class Command(BaseCommand):
     help = 'Parse a CSV file and store the data in the database'

@@ -35,10 +35,13 @@ class Semester(models.Model):
 
 
 class Course(models.Model):
-    name = models.CharField(max_length=50, unique=True)
+    class Meta:
+        unique_together = ('name', 'semester')
+    name = models.CharField(max_length=50)
     description = models.TextField(default='Simple description')
     department = models.ForeignKey('departments.Department', on_delete=models.CASCADE)
     instructors = models.ManyToManyField('departments.Instructor')
+    semester = models.ForeignKey(Semester, on_delete=models.CASCADE, null=True)
     credits = models.IntegerField(default=0)
 
     def __str__(self):
@@ -53,14 +56,17 @@ class Course(models.Model):
         self.department = department
         self.instructors = instructors
         self.credits = credits
-        self.save()
 
 class Section(models.Model):
     class Meta:
-        unique_together = ('course', 'section_number',)
+        unique_together = ('course', 'section_number','section_type')
 
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     section_number = models.IntegerField()
+    # Instructor = models.ForeignKey('departments.Instructor', on_delete=models.CASCADE, null=True)
+    section_type = models.CharField(max_length=10, default="-")
+    enrolled = models.IntegerField(default=0)
+    capacity = models.IntegerField(default=0)
 
     def __str__(self):
         return str(self.section_number)
