@@ -16,7 +16,23 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
+import courses.views
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    # path('api-auth/', include('rest_framework.urls')),
+
+    # test Date and Time
+    path("time/", courses.views.current_datetime),
+
+    # Courses
+    ## get all courses
+    path("courses/", courses.views.course_catalog),
+
+    ## get all sections
+    path("sections/", courses.views.section_catalog),
+
+    ## get all semesters
+    path("semesters/", courses.views.semester_catalog),
+
 ]

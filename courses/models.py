@@ -63,7 +63,7 @@ class Section(models.Model):
 
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     section_number = models.IntegerField()
-    # Instructor = models.ForeignKey('departments.Instructor', on_delete=models.CASCADE, null=True)
+    instructors = models.ManyToManyField('departments.Instructor')
     section_type = models.CharField(max_length=10, default="-")
     enrolled = models.IntegerField(default=0)
     capacity = models.IntegerField(default=0)

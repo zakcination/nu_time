@@ -1,0 +1,24 @@
+Course: 
+ -> courses/json
+ -> Course box
+
+Grades:
+ -> grades/json
+ -> course_id/grades/<course_id>/json
+ -> course_id/grades/<course_id>/<section>/json
+ -> course_id/grades/<course_id>/<instructor>/json
+
+ 
+
+
+### Parse all grades
+### Write Courses endpoints
+
+
+
+
+
+
+
+
+ 

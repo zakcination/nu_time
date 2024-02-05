@@ -11,75 +11,67 @@ import re
 from departments.models import course_to_department_mapper
 from django.db import IntegrityError
 
-
+GRADE_VALUES = {
+    "A": 4.0,
+    "A-": 3.7,
+    "B+": 3.3,
+    "B": 3.0,
+    "B-": 2.7,
+    "C+": 2.3,
+    "C": 2.0,
+    "C-": 1.7,
+    "D+": 1.3,
+    "D": 1.0,
+    "F": 0.0,
+    "P": 0.0,
+    "I": 0.0,
+    "AU": 0.0,
+    "W": 0.0
+}
 
 def parse_csv(file_path):
     with open(file_path, 'r') as file:
         reader = csv.reader(file, delimiter=',')
-        dummy_instructor, instructor_created = Instructor.objects.get_or_create(first_name="Dummy", last_name="Instructor")
-        dummy_department, department_created = Department.objects.get_or_create(name = "Dummy Department")
-        dummy_description = "Dummy description"
-        dummy_semester, semester_created = Semester.objects.get_or_create(start_from=date.today(), end_at=date.today(), name="Dummy Semester")
-        # skip header
+        filename = file_path.split('/')[-1]
+        semester_name = filename.split('_')[0] + ' ' + filename.split('_')[1]
+        print(semester_name)
+        current_semester = Semester.objects.get(name__iexact=semester_name)
+        level = filename.split('_')[2]
         next(reader)
         for row in reader:
-            #obj = ''
-            course, course_created = Course.objects.get_or_create(
-                name = str(row[0]),
-                description = dummy_description,
-                department = dummy_department, 
-                credits = 0
-            )
-            course.instructors.set([dummy_instructor])
-            section, section_created = Section.objects.get_or_create(
-                course=course, 
-                section_number=row[1])
-            # obj += str(row[0]) + ' | '
-            # obj += str(row[1])  + ' | '
-            total_grades = int(row[2])
-            # obj += str(total_grades) + ' | '
-            #obj += '['
+            
+            course , section_number = row[0], row[1]
+            course_obj = Course.objects.get(name=course, semester=current_semester)
+            section_obj = Section.objects.get(course=course_obj, section_number=section_number)
+            
+            # get instructor, capacity from section object by section number
+            curr_instructor, curr_capacity = section_obj.instructors, section_obj.capacity
 
-            #generate JSONfield instance of grades
-            countA = float(row[6]) * total_grades / 100
-            # obj += 'A : ' + str(round(countA))
-            countB = float(row[7]) * total_grades / 100
-            # obj += ', B : ' + str(round(countB))
-            countC = float(row[8]) * total_grades / 100
-            #obj += ', C : ' + str(round(countC))
-            countD = float(row[9]) * total_grades / 100
-            #obj += ', D : ' + str(round(countD))
-            countF = float(row[10]) * total_grades / 100
-            #obj += ', F : ' + str(round(countF))
-            countP = float(row[11]) * total_grades / 100
-            #obj += ', P : ' + str(round(countP))
-            countI = float(row[12]) * total_grades / 100
-            #obj += ', I : ' + str(round(countI))
-            countAU = float(row[13]) * total_grades / 100
-            #obj += ', AU : ' + str(round(countAU))
-            countW = float(row[14]) * total_grades / 100
-            #obj += ', W : ' + str(round(countW))
+            total_grades = int(row[2])
+            
+            counts = calculate_counts(row, total_grades)
+
+            ave_grade = calculate_average_gpa(counts, GRADE_VALUES, total_grades)
+            
+
             course_getting_obj, course_getting_created = CourseGetting.objects.get_or_create(
                 course=course, 
-                section=section, 
-                semester = dummy_semester,
-                instructor = dummy_instructor,
+                section= section_obj,
+                semester = current_semester,
+                instructor = curr_instructor,
                 grade_distribution = {},
-                grade = 'A',
-                capacity = total_grades
+                grade = ave_grade,
+                capacity = curr_capacity
                 )
-            course_getting_obj.add_grade("A", round(countA))
-            course_getting_obj.add_grade("B", round(countB))
-            course_getting_obj.add_grade("C", round(countC))
-            course_getting_obj.add_grade("D", round(countD))
-            course_getting_obj.add_grade("F", round(countF))
-            course_getting_obj.add_grade("P", round(countP))
-            course_getting_obj.add_grade("I", round(countI))
-            course_getting_obj.add_grade("AU", round(countAU))
-            course_getting_obj.add_grade("W", round(countW))
-
-            #obj += ']'
-            #print(obj)
+            course_getting_obj.add_grade("A", round(counts['A']))
+            course_getting_obj.add_grade("B", round(counts['B']))
+            course_getting_obj.add_grade("C", round(counts['C']))
+            course_getting_obj.add_grade("D", round(counts['D']))
+            course_getting_obj.add_grade("F", round(counts['F']))
+            course_getting_obj.add_grade("P", round(counts['P']))
+            course_getting_obj.add_grade("I", round(counts['I']))
+            course_getting_obj.add_grade("AU", round(counts['AU']))
+            course_getting_obj.add_grade("W", round(counts['W']))
             course_getting_obj.save()
     
     print('Successfully parsed CSV file')
@@ -96,7 +88,7 @@ def parse_university_schedule_by_degree(file_path):
         filename = file_path.split('/')[-1]
 
         #get the first row of the csv file
-
+        current_semester = None
         # Semester.name and Level
         semester_name = filename.split('_')[2] + ' 20' + filename.split('_')[3]
         # level = filename.split('_')[2]
@@ -169,21 +161,17 @@ def parse_university_schedule_by_degree(file_path):
 
             department = course_to_department_mapper(course)
 
-            try:
-                course_obj, course_created = Course.objects.get_or_create(
-                    name = course,
-                    description = title,
-                    department = department, 
-                    credits = credits,
-                    semester = current_semester
-                )
-            except IntegrityError:
-                try:
-                    course = Course.objects.get(name='Nonexistent Course')
-                except Course.DoesNotExist:
-                    course = None
-                
-            Section_obj, section_created = Section.objects.get_or_create(
+            
+            course_obj, course_created = Course.objects.get_or_create(
+                name = course,
+                description = title,
+                department = department, 
+                credits = credits,
+                semester = current_semester
+            )
+        
+            
+            section_obj, section_created = Section.objects.get_or_create(
                 course=course_obj, 
                 section_number=section_number,
                 section_type=section_type,
@@ -193,7 +181,8 @@ def parse_university_schedule_by_degree(file_path):
 
             # Add the instructors to the course after it has been created
             for instructor in instructors_list:
-                course_obj.instructors.add(instructor)    
+                course_obj.instructors.add(instructor)
+                section_obj.instructors.add(instructor)  
 
             
 
@@ -244,3 +233,32 @@ def split_instructors(instructors):
         instructors[i] = re.sub(r'(?<!^)(?=[A-Z])', ' ', instructors[i])
 
     return instructors
+
+def calculate_counts(row, total_grades):
+    counts = {}
+    counts['A'] = float(row[6]) * total_grades / 100
+    counts['B'] = float(row[7]) * total_grades / 100
+    counts['C'] = float(row[8]) * total_grades / 100
+    counts['D'] = float(row[9]) * total_grades / 100
+    counts['F'] = float(row[10]) * total_grades / 100
+    counts['P'] = float(row[11]) * total_grades / 100
+    counts['I'] = float(row[12]) * total_grades / 100
+    counts['AU'] = float(row[13]) * total_grades / 100
+    counts['W'] = float(row[14]) * total_grades / 100
+    return counts
+
+def get_instructor_and_capacity(course_name, section_number,section_type):
+    try:
+        section = Section.objects.get(course__name=course_name, section_number=section_number, section_type=section_type)
+        instructor = section.instructors
+        capacity = section.capacity
+        return instructor, capacity
+    except Section.DoesNotExist:
+        return None, None
+    
+def calculate_average_gpa(grade_counts, grade_values, total_grades):
+    if total_grades == 0:
+        return 0
+    weighted_sum = sum(count * grade_values[grade] for grade, count in grade_counts.items())
+    average_gpa = weighted_sum / total_grades
+    return average_gpa

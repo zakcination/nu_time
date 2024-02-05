@@ -18,10 +18,15 @@ class CourseAdmin(admin.ModelAdmin):
 
 
 class CourseGettingAdmin(admin.ModelAdmin):
-    list_display = ('course', 'section', 'semester', 'instructor', 'grade_distribution', 'grade', 'capacity')
+    list_display = ('course', 'section', 'semester', 'display_instructors', 'grade_distribution', 'grade', 'capacity')
+
+    def display_instructors(self, obj):
+        return ", ".join([str(instructor) for instructor in obj.instructors.all()])
+    display_instructors.short_description = 'Instructors'
+    
 
 class SectionAdmin(admin.ModelAdmin):
-    list_display = ('course', 'section_number', 'section_type', 'enrolled', 'capacity')
+    list_display = ('course', 'section_number', 'section_type', 'display_instructors', 'enrolled', 'capacity')
     ordering = ('course',)
 
     def total_enrolled(self, obj):
@@ -31,6 +36,10 @@ class SectionAdmin(admin.ModelAdmin):
     def total_capacity(self, obj):
         return sum(section.capacity for section in obj.section_set.all())
     total_capacity.short_description = 'Total Capacity'
+    
+    def display_instructors(self, obj):
+        return ", ".join([str(instructor) for instructor in obj.instructors.all()])
+    display_instructors.short_description = 'Instructors'
 
 
 admin.site.register(Semester, SemesterAdmin)
