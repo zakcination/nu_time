@@ -1,6 +1,8 @@
 import csv
 from datetime import date
 from datetime import datetime
+from turtle import st
+
 from courses.models import CourseGetting
 from courses.models import Course
 from courses.models import Section
@@ -76,7 +78,125 @@ def parse_csv(file_path):
     
     print('Successfully parsed CSV file')
 
+def extract_semester_name(file_path):
+    # Implement the logic based on your file naming convention
+    filename = file_path.split('/')[-1]
+    semester_name = " ".join(filename.split('_')[2:4])
+    print(semester_name)
+    return semester_name
 
+def calculate_grade_distribution(row):
+    # Implement this based on your CSV format.
+    # Example: { "A": count, "B": count, ... }
+    distribution = {grade: int(row[i]) for i, grade in enumerate(["A", "B", "C", "D", "F", "P", "I", "AU", "W"], start=6)}
+    return distribution
+
+def float_to_letter_grade(grade):
+                    if grade >= 4.0:
+                        return "A"
+                    elif grade >= 3.7:
+                        return "A-"
+                    elif grade >= 3.3:
+                        return "B+"
+                    elif grade >= 3.0:
+                        return "B"
+                    elif grade >= 2.7:
+                        return "B-"
+                    elif grade >= 2.3:
+                        return "C+"
+                    elif grade >= 2.0:
+                        return "C"
+                    elif grade >= 1.7:
+                        return "C-"
+                    elif grade >= 1.3:
+                        return "D+"
+                    elif grade >= 1.0:
+                        return "D"
+                    else:
+                        return "F"
+
+def parse_ug_seds_fa2023_grades(file_path):
+        with open(file_path, 'r') as file:
+            reader = csv.reader(file)
+            next(reader)  # Skip the header row
+
+            semester_name = extract_semester_name(file_path)
+            try:
+                current_semester = Semester.objects.get(name__iexact=semester_name)
+            except Semester.DoesNotExist:
+                print(f"Semester {semester_name} not found in the database.")
+                return
+
+            for row in reader:
+                course_abbr, section_number = row[0], row[1]
+
+                #if course abbr contains a ": Lab" then it is a lab section
+                if ": Lab" in course_abbr:
+                    section_type = "Lb"
+                #if course abbr contains a ": Lecture" then it is a lecture section
+                elif ": Lecture" in course_abbr:
+                    section_type = "L"
+                else:
+                #let section_type be any section type
+                    section_type = "L"
+
+
+                print(f"Processing {course_abbr} Section {section_number} in {semester_name}")
+                try:
+                    course_obj = Course.objects.get(name=course_abbr, semester=current_semester)
+                    section_objs = Section.objects.filter(course=course_obj, section_number=section_number, section_type=section_type, semester=current_semester)
+                    if len(section_objs) > 1:
+                        print(f"Warning: Found {len(section_objs)} sections for {course_abbr} Section {section_number} in {semester_name}")
+                    section_obj = section_objs.first()
+                except (Course.DoesNotExist, Section.DoesNotExist) as e:
+                    print(f"Error: {e}")
+                    continue
+
+                # Assuming your CSV has columns for grade distributions in a specific format
+                # Implement the logic to calculate ave_grade and grade distributions
+                total_grades = int(row[2])
+
+                counts = calculate_counts(row, total_grades)
+                ave_grade = calculate_average_gpa(counts, GRADE_VALUES, total_grades)
+                grade = float_to_letter_grade(ave_grade)
+                grade_distribution = calculate_grade_distribution(row)
+                #row4_5 replacing , to . and converting to float if it is not empty
+                st_dev = float(row[4].replace(',', '.')) if len(row[4])>0 else 0
+                median_gpa = float(row[5].replace(',', '.')) if len(row[5])>0 else 0
+
+
+
+                # Create or update CourseGetting object
+                try:
+                    course_getting_obj, created = CourseGetting.objects.update_or_create(
+                        course=course_obj, 
+                        section=section_obj,
+                        semester=current_semester,
+                        grade=grade,
+                        st_dev=st_dev,
+                        median_gpa=median_gpa,
+                        defaults={
+                            'instructor': section_obj.instructors.first() if section_obj else None,
+                            'average_gpa': ave_grade,
+                            'grade_distribution': grade_distribution
+                        }
+                    )
+                except IntegrityError:
+                    print(f"Error: IntegrityError for {course_abbr} Section {section_number} in {semester_name}")
+                    continue
+                
+                if created:
+                    print(f"Added grade distribution for {course_abbr} Section {section_number} in {semester_name}")
+                else:
+                    print(f"Updated grade distribution for {course_abbr} Section {section_number} in {semester_name}")
+
+                print(
+                    f"Course: {course_abbr}, Section: {section_number}, Semester: {semester_name}, "
+                    f"Instructor: {course_getting_obj.instructor}, Average GPA: {ave_grade}, "
+                    f"Grade Distribution: {grade_distribution}"
+                )
+
+                
 def parse_university_schedule_by_degree(file_path):
     with open(file_path, 'r') as file:
 
@@ -122,6 +242,8 @@ def parse_university_schedule_by_degree(file_path):
             # Get course title
             title = str(row[2]) 
 
+            print(course, section_number, section_type)
+
             # Get ECTS
             credits = str(row[4])
             if credits == '':
@@ -161,23 +283,31 @@ def parse_university_schedule_by_degree(file_path):
 
             department = course_to_department_mapper(course)
 
-            
-            course_obj, course_created = Course.objects.get_or_create(
-                name = course,
-                description = title,
-                department = department, 
-                credits = credits,
-                semester = current_semester
-            )
+            try:
+                course_obj, course_created = Course.objects.get_or_create(
+                    name = course,
+                    description = title,
+                    department = department, 
+                    credits = credits,
+                    semester = current_semester
+                )
+            except IntegrityError:
+                print(f"Skipping duplicate course {course} at {section_number, section_type} for semester {semester_name}")
+                continue  # Skip this iteration and move to the next row
         
-            
-            section_obj, section_created = Section.objects.get_or_create(
-                course=course_obj, 
-                section_number=section_number,
-                section_type=section_type,
-                enrolled=section_enrolled,
-                capacity=section_capacity,
-            )
+            try:
+                section_obj, section_created = Section.objects.get_or_create(
+                    course=course_obj, 
+                    section_number=section_number,
+                    section_type=section_type,
+                    enrolled=section_enrolled,
+                    capacity=section_capacity,
+                    semester=current_semester,
+                    time=time
+                )
+            except IntegrityError:
+                print(f"Skipping duplicate section {course} at {section_number, section_type} for semester {semester_name}")
+                continue
 
             # Add the instructors to the course after it has been created
             for instructor in instructors_list:
@@ -190,6 +320,7 @@ def parse_university_schedule_by_degree(file_path):
 
 
     print('Successfully parsed CSV file')
+
 
 def get_section_number_and_type(section):
     match = re.match(r'(\d+)(\D+)', section)
@@ -234,6 +365,7 @@ def split_instructors(instructors):
 
     return instructors
 
+
 def calculate_counts(row, total_grades):
     counts = {}
     counts['A'] = float(row[6]) * total_grades / 100
@@ -247,6 +379,7 @@ def calculate_counts(row, total_grades):
     counts['W'] = float(row[14]) * total_grades / 100
     return counts
 
+
 def get_instructor_and_capacity(course_name, section_number,section_type):
     try:
         section = Section.objects.get(course__name=course_name, section_number=section_number, section_type=section_type)
@@ -255,10 +388,13 @@ def get_instructor_and_capacity(course_name, section_number,section_type):
         return instructor, capacity
     except Section.DoesNotExist:
         return None, None
-    
+
+
 def calculate_average_gpa(grade_counts, grade_values, total_grades):
     if total_grades == 0:
         return 0
     weighted_sum = sum(count * grade_values[grade] for grade, count in grade_counts.items())
     average_gpa = weighted_sum / total_grades
+    #3 scientific numbers
+    average_gpa = round(average_gpa, 3)
     return average_gpa

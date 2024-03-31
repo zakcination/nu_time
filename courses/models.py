@@ -1,4 +1,6 @@
+from re import S
 from django.db import models
+from pkg_resources import split_sections
 
 
 GRADE_CHOICES = {
@@ -42,7 +44,8 @@ class Course(models.Model):
     department = models.ForeignKey('departments.Department', on_delete=models.CASCADE)
     instructors = models.ManyToManyField('departments.Instructor')
     semester = models.ForeignKey(Semester, on_delete=models.CASCADE, null=True)
-    credits = models.IntegerField(default=0)
+    credits = models.IntegerField(default=0) 
+    # sections = models.ManyToManyField('Section')
 
     def __str__(self):
         return self.name
@@ -59,14 +62,15 @@ class Course(models.Model):
 
 class Section(models.Model):
     class Meta:
-        unique_together = ('course', 'section_number','section_type')
-
+        unique_together = ('course', 'section_number','section_type', 'semester', 'time')
+    semester = models.ForeignKey(Semester, on_delete=models.CASCADE, null=True)
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     section_number = models.IntegerField()
     instructors = models.ManyToManyField('departments.Instructor')
     section_type = models.CharField(max_length=10, default="-")
     enrolled = models.IntegerField(default=0)
     capacity = models.IntegerField(default=0)
+    time = models.CharField(max_length=50, default="-")
 
     def __str__(self):
         return str(self.section_number)
@@ -81,15 +85,18 @@ class Section(models.Model):
 
 class CourseGetting(models.Model):
     class Meta:
-        unique_together = ('course', 'section', 'semester', 'instructor',)    
+        unique_together = ('course', 'section', 'semester', 'instructor')    
 
     course = models.ForeignKey(Course, on_delete=models.CASCADE, unique = False)
     section = models.ForeignKey(Section, on_delete=models.CASCADE, null=True)
+    section_type = models.CharField(max_length=10, default="-")
     semester = models.ForeignKey(Semester, on_delete=models.CASCADE, null=True)
     instructor = models.ForeignKey('departments.Instructor', on_delete=models.CASCADE, null=True)
     grade_distribution = models.JSONField(default=dict)
+    average_gpa = models.FloatField(default=0, null=True)
     grade = models.CharField(choices=GRADE_CHOICES, max_length=2, default="A")
-    capacity = models.IntegerField(default=20)
+    st_dev = models.FloatField(default=0, null=True)
+    median_gpa = models.FloatField(default=0, null=True)
 
     def add_grade(self, grade, count):
         if grade in dict(GRADE_CHOICES):
