@@ -4,31 +4,42 @@ services:
   db:
     image: postgres
     volumes:
-      - ./data/db:/var/lib/postgresql/data
+      - ./backend/data/db:/var/lib/postgresql/data
     environment:
       - POSTGRES_DB=postgres
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
 
   web:
-    build: .
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     #command: sleep 10000000000000000000000
     command: python manage.py runserver 0.0.0.0:8000
     volumes:
-      - .:/code
+      - ./backend:/code
     ports:
       - "8000:8000"
     depends_on:
       - db
-
-  metabase:
-    image: metabase/metabase:latest
-    container_name: metabase
+  # metabase:
+  #   image: metabase/metabase:latest
+  #   container_name: metabase
+  #   volumes:
+  #     - ./backend/metabase:/metabase
+  #   ports:
+  #     - "3333:3000"
+  #   env_file:
+  #     - ./backend/.metabase-env
+  #   depends_on:
+  #     - db
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
     volumes:
-      - ./metabase:/metabase
+      - ./frontend:/app-react-typescript
     ports:
-      - "3333:3000"
-    env_file:
-      - .metabase-env
-    depends_on:
-      - db
+      - "3000:3000"
+    environment:
+      - REACT_APP_DB_HOST=db

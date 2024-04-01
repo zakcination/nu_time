@@ -1,7 +1,0 @@
-Django==4.2.9
-psycopg #add version
-psycopg2 #add version
-ipython
-djangorestframework==3.14.0
-Markdown==3.5.2
-django_filter==23.5
