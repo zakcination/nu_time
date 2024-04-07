@@ -42,7 +42,9 @@ INSTALLED_APPS = [
 
     "departments",
     "courses",
-    "parser"
+    "parser",
+
+    "graphene_django"
 ]
 
 MIDDLEWARE = [

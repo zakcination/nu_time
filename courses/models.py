@@ -44,7 +44,7 @@ class Course(models.Model):
     department = models.ForeignKey('departments.Department', on_delete=models.CASCADE)
     instructors = models.ManyToManyField('departments.Instructor')
     semester = models.ForeignKey(Semester, on_delete=models.CASCADE, null=True)
-    credits = models.IntegerField(default=0) 
+    credits = models.IntegerField(default=0)
     # sections = models.ManyToManyField('Section')
 
     def __str__(self):
@@ -63,6 +63,7 @@ class Course(models.Model):
 class Section(models.Model):
     class Meta:
         unique_together = ('course', 'section_number','section_type', 'semester', 'time')
+    
     semester = models.ForeignKey(Semester, on_delete=models.CASCADE, null=True)
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     section_number = models.IntegerField()

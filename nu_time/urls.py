@@ -17,10 +17,16 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 import courses.views
+from .schema import schema
+
+from django.views.decorators.csrf import csrf_exempt
+from graphene_django.views import GraphQLView
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    # path('api-auth/', include('rest_framework.urls')),
+
+    # GraphQL
+    path("graphql", csrf_exempt(GraphQLView.as_view(graphiql=True, schema=schema))),
 
     # test Date and Time
     path("time/", courses.views.current_datetime),

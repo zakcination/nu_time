@@ -1,0 +1,11 @@
+*.pyc
+*.DS_Store
+*.log
+venv*
+*.dump
+*.rdb
+.vagrant
+.idea
+.env*
+!.env.template
+/.vscode
