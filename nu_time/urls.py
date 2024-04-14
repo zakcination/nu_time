@@ -28,6 +28,8 @@ urlpatterns = [
     # GraphQL
     path("graphql", csrf_exempt(GraphQLView.as_view(graphiql=True, schema=schema))),
 
+    path("get_filters", courses.views.get_filters),
+
     # test Date and Time
     path("time/", courses.views.current_datetime),
 

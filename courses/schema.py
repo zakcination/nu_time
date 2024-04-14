@@ -59,7 +59,30 @@ class SectionType(DjangoObjectType):
         filterset_class = SectionFilter
         interfaces = (graphene.Node, )
 
+
+class CourseGettingFilter(django_filters.FilterSet):
+    class Meta: 
+        model = CourseGetting
+        fields = {
+            'course': ['exact'],
+            'section': ['exact'],
+            'section_type': ['exact', 'icontains', 'istartswith'],
+            'semester': ['exact'],
+            'instructor': ['exact'],
+            'average_gpa': ['exact', 'lt', 'gt'],
+            'grade': ['exact', 'icontains', 'istartswith'],
+            'st_dev': ['exact', 'lt', 'gt'],
+            'median_gpa': ['exact', 'lt', 'gt']
+        }
+
+class CourseGettingType(DjangoObjectType):
+    class Meta: 
+        model = CourseGetting
+        filterset_class = CourseGettingFilter
+        interfaces = (graphene.Node, )
+
 class Query(graphene.ObjectType):
+
     course = graphene.Node.Field(CourseType)
     all_courses = DjangoFilterConnectionField(CourseType)
     
@@ -68,3 +91,6 @@ class Query(graphene.ObjectType):
 
     section = graphene.Node.Field(SectionType)
     all_sections = DjangoFilterConnectionField(SectionType)
+
+    coursegetting = graphene.Node.Field(CourseGettingType)
+    all_coursegettings = DjangoFilterConnectionField(CourseGettingType)

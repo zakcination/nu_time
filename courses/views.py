@@ -10,6 +10,8 @@ from .models import Semester
 
 import datetime
 
+def get_filters(request):
+    return JsonResponse({})
 
 def current_datetime(request):
     now = datetime.datetime.now()
